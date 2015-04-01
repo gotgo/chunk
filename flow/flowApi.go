@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gotgo/chunk"
 	"github.com/gotgo/fw/me"
-	"github.com/gotgo/goflow"
 )
 
 const formFileKey = "file"
@@ -133,5 +133,5 @@ func requireInt64Value(r *http.Request, name string) (int64, error) {
 		return 0, me.NewErr(name + " missing")
 	}
 
-	return strconv.ParseInt(r.FormValue("flowTotalSize"), 10, 0)
+	return strconv.ParseInt(r.FormValue("flowTotalSize"), 10, 64)
 }

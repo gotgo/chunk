@@ -32,11 +32,6 @@ type UploadOutcome struct {
 	Data interface{}
 }
 
-//type Complete struct {
-//	Callback func(*UploadOutcome)
-//	Data     interface{}
-//}
-
 type AssembleFolder struct {
 	Callback    func(*UploadOutcome)
 	Data        interface{}
@@ -68,18 +63,15 @@ type FolderSource interface {
 	//returns chunks in sorted order
 	Files() ([]FileSource, error)
 	Remove() error
-
-	//FolderUri() string
 }
 
 type FolderDestination interface {
 	//Folder Destination
 	Create(filename string) (io.WriteCloser, error)
 	Delete(filename string) error
-	Size(filename string) int64
-
-	//
 	Uri(filename string) string
+
+	Size(filename string) int64
 }
 
 type Destination interface {
