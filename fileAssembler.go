@@ -110,9 +110,12 @@ func (fa *FileAssembler) doAssemble(folder *ChunkFolder, destination FolderDesti
 	}
 
 	if err = writer.Close(); err != nil {
-		destination.Delete(filename) //cleanup
+		destination.Delete(filename) //delete on error
 		return "", me.Err(err, "failed to close writer", &me.KV{"filename", filename})
 	}
+
+	//we are only removing on success, so we can see what failed? or should we always cleanup no matter what?
+	source.Remove()
 	return destination.Uri(filename), nil
 }
 
