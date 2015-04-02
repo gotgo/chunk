@@ -40,7 +40,7 @@ func ChunkAlreadyUploaded(r *http.Request, d chunk.Destination) (bool, int, stri
 func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int, string, error) {
 	u, missingField := FlowParse(r)
 	if missingField != "" {
-		return nil, 400, "bad request - missing data " + missingField, nil
+		return nil, 400, "bad request - missing data " + missingField
 	}
 
 	u.Destination = d
@@ -67,7 +67,7 @@ func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int,
 	if err != nil {
 		return nil, 500, "failed to open the submitted file", err
 	}
-	f.Close()
+	defer f.Close()
 	completed, err := u.UploadChunk(f)
 
 	if err != nil {

@@ -50,8 +50,9 @@ func (fd *FileDestination) Uri(filename string) string {
 }
 
 func (fd *FileDestination) Create(filename string) (io.WriteCloser, error) {
-	if fd.FolderRoot != "" {
-		os.MkdirAll(fd.FolderRoot, 0774)
+	folderRoot := path.Dir(fd.getDestinationFile(filename))
+	if folderRoot != "" {
+		os.MkdirAll(folderRoot, 0774)
 	}
 	filePath := fd.Uri(filename)
 
