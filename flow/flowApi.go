@@ -37,10 +37,10 @@ func ChunkAlreadyUploaded(r *http.Request, d chunk.Destination) (bool, int, stri
 	}
 }
 
-func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int, string) {
+func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int, string, error) {
 	u, missingField := FlowParse(r)
 	if missingField != "" {
-		return nil, 400, "bad request - missing data " + missingField
+		return nil, 400, "bad request - missing data " + missingField, nil
 	}
 
 	u.Destination = d
@@ -48,33 +48,33 @@ func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int,
 	r.ParseMultipartForm(bufferSize)
 
 	if r.MultipartForm == nil {
-		return nil, 400, "bad request - no multipart form"
+		return nil, 400, "bad request - no multipart form", nil
 	}
 
 	if r.MultipartForm.File == nil {
-		return nil, 400, "no files in multipart form"
+		return nil, 400, "no files in multipart form", nil
 	}
 
 	files := r.MultipartForm.File[formFileKey]
 
 	if len(files) > 1 {
-		return nil, 400, "more than 1 file present for key " + formFileKey
+		return nil, 400, "more than 1 file present for key " + formFileKey, nil
 	} else if len(files) == 0 {
-		return nil, 400, "no file found at multipart key:" + formFileKey
+		return nil, 400, "no file found at multipart key:" + formFileKey, nil
 	}
 
 	f, err := files[0].Open()
 	if err != nil {
-		return nil, 500, "failed to open the submitted file"
+		return nil, 500, "failed to open the submitted file", err
 	}
 	f.Close()
 	completed, err := u.UploadChunk(f)
 
 	if err != nil {
-		return nil, 500, "failed to upload file"
+		return nil, 500, "failed to upload file", err
 	}
 
-	return completed, 200, "OK"
+	return completed, 200, "OK", nil
 }
 
 func FlowParse(r *http.Request) (*chunk.ChunkUpload, string) {
