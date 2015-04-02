@@ -123,7 +123,7 @@ func requireIntValue(r *http.Request, name string) (int, error) {
 		return 0, me.NewErr(name + " missing")
 	}
 
-	v, e := strconv.ParseInt(r.FormValue("flowTotalSize"), 10, 0)
+	v, e := strconv.ParseInt(val, 10, 0)
 	return int(v), e
 }
 
@@ -133,5 +133,5 @@ func requireInt64Value(r *http.Request, name string) (int64, error) {
 		return 0, me.NewErr(name + " missing")
 	}
 
-	return strconv.ParseInt(r.FormValue("flowTotalSize"), 10, 64)
+	return strconv.ParseInt(val, 10, 64)
 }
