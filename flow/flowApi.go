@@ -40,7 +40,7 @@ func ChunkAlreadyUploaded(r *http.Request, d chunk.Destination) (bool, int, stri
 func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int, string, error) {
 	u, missingField := FlowParse(r)
 	if missingField != "" {
-		return nil, 400, "bad request - missing data " + missingField
+		return nil, 400, "bad request - missing data " + missingField, nil
 	}
 
 	u.Destination = d
