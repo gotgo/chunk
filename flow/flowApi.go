@@ -68,13 +68,13 @@ func UploadChunk(r *http.Request, d chunk.Destination) (*chunk.ChunkFolder, int,
 		return nil, 500, "failed to open the submitted file", err
 	}
 	defer f.Close()
-	completed, err := u.UploadChunk(f)
+	folder, err := u.UploadChunk(f)
 
 	if err != nil {
 		return nil, 500, "failed to upload file", err
 	}
 
-	return completed, 200, "OK", nil
+	return folder, 200, "OK", nil
 }
 
 func FlowParse(r *http.Request) (*chunk.ChunkUpload, string) {

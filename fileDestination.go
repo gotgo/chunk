@@ -16,15 +16,27 @@ import (
 
 type FileDestination struct {
 	FolderRoot string
-	file       *os.File
+	subfolder  string
 }
 
-func (f *FileDestination) getPathRoot() string {
-	return util.NotEmpty(f.FolderRoot, "/tmp")
+func (f *FileDestination) Writer(subfolder string) FolderDestination {
+	return f.createCopy(subfolder)
 }
 
-func (fd *FileDestination) getDestinationFile(filePath string) string {
-	return filepath.Clean(path.Join(fd.getPathRoot(), filePath))
+func (f *FileDestination) Reader(subfolder string) FolderSource {
+	return f.createCopy(subfolder)
+}
+
+func (f *FileDestination) createCopy(subfolder string) *FileDestination {
+	return &FileDestination{FolderRoot: f.FolderRoot, subfolder: subfolder}
+}
+
+func (f *FileDestination) getFolder() string {
+	return filepath.Join(util.NotEmpty(f.FolderRoot, "/tmp"), f.subfolder)
+}
+
+func (f *FileDestination) getDestinationFile(filePath string) string {
+	return filepath.Join(f.getFolder(), filePath)
 }
 
 // Size() - Gets the file's size. If file doesn't exist, value is less than zero
@@ -57,45 +69,20 @@ func (fd *FileDestination) Create(filename string) (io.WriteCloser, error) {
 	filePath := fd.Uri(filename)
 
 	file, err := os.Create(filePath)
-	fd.file = file
 	if err != nil {
 		return nil, me.Err(err, "create destination fail", &me.KV{"folderPath", filename}, &me.KV{"filePath", filePath})
 	}
-	return fd, nil
-}
-
-func (fd *FileDestination) Write(b []byte) (int, error) {
-	if fd.file == nil {
-		panic("no file to write to")
-	}
-	return fd.file.Write(b)
-}
-
-func (fd *FileDestination) Close() error {
-	file := fd.file
-	if file == nil {
-		panic("no file to close")
-	}
-
-	if err := file.Sync(); err != nil {
-		return me.Err(err, "failed to flush destination to disk", &me.KV{"file", file.Name()})
-	}
-
-	if err := file.Close(); err != nil {
-		return me.Err(err, "failed to close destination file", &me.KV{"file", file.Name()})
-	}
-
-	return nil
+	return &FileFlusher{file}, nil
 }
 
 // Folder Source
 
 func (f *FileDestination) Remove() error {
-	return os.RemoveAll(f.FolderRoot)
+	return os.RemoveAll(f.getFolder())
 }
 
 func (f *FileDestination) Files() ([]FileSource, error) {
-	folderPath := f.FolderRoot
+	folderPath := f.getFolder()
 
 	fileInfos, err := ioutil.ReadDir(folderPath)
 	if err != nil {
@@ -113,6 +100,8 @@ func (f *FileDestination) Files() ([]FileSource, error) {
 	}
 	return source, nil
 }
+
+////////////////////////////
 
 type FileSystemFile struct {
 	Path string
@@ -142,3 +131,35 @@ func (f *FileSystemFile) Open() (io.ReadCloser, error) {
 	}
 	return src, nil
 }
+
+////////////////////////////
+
+type FileFlusher struct {
+	file *os.File
+}
+
+func (fd *FileFlusher) Write(b []byte) (int, error) {
+	if fd.file == nil {
+		panic("no file to write to")
+	}
+	return fd.file.Write(b)
+}
+
+func (fd *FileFlusher) Close() error {
+	file := fd.file
+	if file == nil {
+		panic("no file to close")
+	}
+
+	if err := file.Sync(); err != nil {
+		return me.Err(err, "failed to flush destination to disk", &me.KV{"file", file.Name()})
+	}
+
+	if err := file.Close(); err != nil {
+		return me.Err(err, "failed to close destination file", &me.KV{"file", file.Name()})
+	}
+
+	return nil
+}
+
+////////////////////////////

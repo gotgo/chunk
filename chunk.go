@@ -75,8 +75,8 @@ type FolderDestination interface {
 }
 
 type Destination interface {
-	FolderDestination
-	FolderSource
+	Writer(subfolder string) FolderDestination
+	Reader(subfolder string) FolderSource
 }
 
 type ByChunk []os.FileInfo

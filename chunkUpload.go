@@ -2,7 +2,6 @@ package chunk
 
 import (
 	"io"
-	"path"
 	"strconv"
 
 	"github.com/gotgo/fw/me"
@@ -12,8 +11,8 @@ import (
 
 type ChunkUpload struct {
 	CurrentChunkNumber int //flowChunkNumber
-	ChunkSize          int
 	CurrentChunkSize   int
+	ChunkSize          int
 	TotalSize          int64
 	Identifier         string
 	Filename           string
@@ -26,37 +25,48 @@ func (u *ChunkUpload) chunkFolderName() string {
 	return u.Identifier
 }
 
-func (u *ChunkUpload) chunkFilePath() string {
-	return path.Join(u.chunkFolderName(), strconv.Itoa(u.CurrentChunkNumber))
+func (u *ChunkUpload) filename() string {
+	return strconv.Itoa(u.CurrentChunkNumber)
 }
 
 func (u *ChunkUpload) ChunkAlreadyUploaded() bool {
-	filePath := u.chunkFilePath()
-	return int64(u.CurrentChunkSize) == u.Destination.Size(filePath)
+	d := u.Destination.Writer(u.chunkFolderName())
+	filePath := u.filename()
+	return int64(u.CurrentChunkSize) == d.Size(filePath)
 }
 
 func (u *ChunkUpload) UploadChunk(src io.Reader) (*ChunkFolder, error) {
-	dstPath := u.chunkFilePath()
-	dst, err := u.Destination.Create(dstPath)
+	d := u.Destination.Writer(u.chunkFolderName())
+	dstPath := u.filename()
+	dst, err := d.Create(dstPath)
 	if err != nil {
 		return nil, me.Err(err, "failed to create file for chunk")
 	}
 
-	// count??
-	if _, err = io.Copy(dst, src); err != nil {
+	var copied int64
+	if copied, err = io.Copy(dst, src); err != nil {
 		_ = dst.Close()
-		_ = u.Destination.Delete(dstPath) //remove tainted file
+		_ = d.Delete(dstPath) //remove tainted file
 		return nil, me.Err(err, "failed to copy source file to destinationfile", &me.KV{"dest", dst}, &me.KV{"source", "http multi part"})
 	}
 
+	if copied != int64(u.CurrentChunkSize) {
+		_ = dst.Close()
+		_ = d.Delete(dstPath)
+		return nil, me.NewErr("actual chunk size not the same as the advertised CurrentChunkSize",
+			&me.KV{"CurrentChunkSize", u.CurrentChunkSize},
+			&me.KV{"copied", copied})
+	}
+
 	if err = dst.Close(); err != nil {
-		_ = u.Destination.Delete(dstPath) //remove possibly tainted file
+		_ = d.Delete(dstPath) //remove possibly tainted file
 		return nil, me.Err(err, "failed to close destination")
 	}
 
 	//sum of uploaded files
 	//get list of uploaded file chunks
-	sum, err := sumSizes(u.Destination.Files())
+	s := u.Destination.Reader(u.chunkFolderName())
+	sum, err := sumSizes(s.Files()) //sizes
 	if err != nil {
 		return nil, me.Err(err, "unable to get list of uploaded chunk files", &me.KV{"path", dstPath})
 	}
@@ -66,7 +76,7 @@ func (u *ChunkUpload) UploadChunk(src io.Reader) (*ChunkFolder, error) {
 		Filename: filename,
 	}
 
-	folder.FolderSource = u.Destination
+	folder.FolderSource = s
 	if sum == u.TotalSize {
 		folder.isComplete = true
 	}
