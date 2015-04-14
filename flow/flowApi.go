@@ -1,11 +1,13 @@
 package flow
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gotgo/chunk"
 	"github.com/gotgo/fw/me"
+	"github.com/gotgo/fw/util"
 )
 
 const formFileKey = "file"
@@ -101,7 +103,14 @@ func FlowParse(r *http.Request) (*chunk.ChunkUpload, string) {
 		return nil, "flowTotalSize"
 	}
 
-	u.Identifier = r.FormValue("flowIdentifier")
+	flowIdentifier := r.FormValue("flowIdentifier")
+
+	safe, index := util.IsPathSafe(flowIdentifier)
+	if !safe {
+		return nil, fmt.Sprintf("flowIdentifier invalid character at index %d", index)
+	}
+
+	u.Identifier = flowIdentifier
 	if u.Identifier == "" {
 		return nil, "flowIdentifier"
 	}
