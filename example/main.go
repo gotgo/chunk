@@ -7,8 +7,8 @@ import (
 	"runtime"
 
 	"github.com/gorilla/handlers"
-	"github.com/gotgo/goflow"
-	"github.com/gotgo/goflow/flow"
+	"github.com/gotgo/chunk"
+	"github.com/gotgo/chunk/flow"
 )
 
 var assembler *chunk.FileAssembler
